@@ -1,18 +1,21 @@
 #ifndef GAUSSIANESQUE_H
 #define GAUSSIANESQUE_H
 
-#include "math.h"
+#include <cmath>
+#include "differentiable_func.h"
+#include "smooth_func.h"
 
-class gaussianesque {
+class gaussianesque : public smooth_func {
 private:
     class parameter_set {
     private:
-        double alpha, beta;
+        double alpha, beta, neg_recip_beta_to_alpha;
     public:
         parameter_set(double alpha, double beta);
 
         double get_alpha();
         double get_beta();
+        double get_neg_recip_beta_to_alpha();
     };
 
     // Terms are of the form c * x^k * e^(-abs(x/beta)^alpha)
@@ -29,17 +32,22 @@ private:
 
     parameter_set *parameters;
     term **terms;
-    int num_terms;
+    int cap_terms;
+    int num_terms = 0;
     bool originating;
 
     // For constructing a gaussianesque as a derivative of another gaussianesque
-    gaussianesque(parameter_set *originating_parameters, term **terms, int num_terms);
+    gaussianesque(parameter_set *originating_parameters, int cap_terms);
 public:
     gaussianesque(double alpha, double beta);
 
-    gaussianesque* differentiate();
+    gaussianesque *differentiate();
 
     ~gaussianesque();
+
+    void push_term(double coefficient, double exponent);
+
+    double operator()(double);
 };
 
 #endif
