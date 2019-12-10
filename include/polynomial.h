@@ -3,7 +3,7 @@
 
 #include "smooth_func.h"
 
-class polynomial : smooth_func {
+class polynomial : public smooth_func {
 private:
     class term {
     private:
@@ -15,7 +15,7 @@ private:
         double get_coefficient();
         double get_exponent();
     };
-    
+
     term **terms;
     int cap_terms; // Maximum amount of terms a polynomial can have
     int num_terms = 0; // Amount of terms a polynomial actually has
@@ -26,6 +26,9 @@ public:
     void push_term(double, double);
 
     polynomial *differentiate();
+
+    polynomial *integrate(); // Does not encode unknown constant
+    polynomial *integrate(int); // Encodes supplied constant as its own term
 
     double operator()(double);
 };

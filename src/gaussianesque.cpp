@@ -35,6 +35,8 @@ double gaussianesque::term::get_exponent() {
 gaussianesque::gaussianesque(parameter_set *originating_parameters, int cap_terms) {
     this->parameters = originating_parameters;
     this->cap_terms = cap_terms;
+    this->num_terms = 0;
+    this->terms = new term*[cap_terms];
     originating = false;
 }
 
@@ -64,6 +66,12 @@ gaussianesque *gaussianesque::differentiate() {
 
         // Each term differentiates into two more terms via the product rule
         for (int i = 0; i < this->num_terms; i++) {
+            // Skip terms which are just constants, since otherwise they'll differentiate
+            // into terms with -1 exponents and cause errors
+            if (terms[i]->get_exponent() == 0) {
+                continue;
+            }
+
             res->push_term(this->terms[i]->get_coefficient() * this->terms[i]->get_exponent(),
                            this->terms[i]->get_exponent() - 1);
 

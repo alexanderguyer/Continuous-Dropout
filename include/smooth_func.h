@@ -4,7 +4,8 @@
 #include "differentiable_func.h"
 
 class smooth_func : public differentiable_func {
-    virtual differentiable_func *differentiate() = 0;
+public:
+    virtual smooth_func *differentiate() = 0;
 };
 
 #endif

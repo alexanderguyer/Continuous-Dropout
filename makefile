@@ -1,5 +1,5 @@
 CC=g++
-FLAGS=-std=c++11
+FLAGS=-std=c++11 -g
 INCLUDE=-Iinclude
 
 SRC=src
