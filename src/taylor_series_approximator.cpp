@@ -24,9 +24,7 @@ polynomial *taylor_series_approximator::approximate(smooth_func &s, const int a,
         // Each term is the ith derivative of f evaluated at a, divided by the factorial of i, multiplied by (x-a)^i
         if (i > 0) {
             // In this case, we use the i-1th derivative of s. Exponent is i.
-            // Get a reference to the derivative so we can accurately call the () operator without slicing the object (like (*derivative)() --> this is bad)
-            smooth_func &der_ref = *derivative;
-            double coefficient = der_ref(a) / factorial;
+            double coefficient = (*derivative)(a) / factorial;
             res->push_term(coefficient, i);
             // Also, since each instance of the taylor series is coeffient * (x - a), each instance contributes
             // to the constant term by coefficient * (-a)

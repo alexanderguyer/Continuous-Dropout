@@ -23,6 +23,8 @@ public:
     polynomial(int);
     ~polynomial();
 
+    void print();
+
     void push_term(double, double);
 
     polynomial *differentiate();

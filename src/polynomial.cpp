@@ -93,3 +93,13 @@ polynomial *polynomial::integrate(int constant) {
     // Return the new polynomial
     return res;
 }
+
+void polynomial::print() {
+    for (int i = 0; i < num_terms; i++) {
+        if (i > 0) {
+            cout << " + ";
+        }
+        cout << terms[i]->get_coefficient() << "x^" << terms[i]->get_exponent();
+    }
+    cout << "\n";
+}

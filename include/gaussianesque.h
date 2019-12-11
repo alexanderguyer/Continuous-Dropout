@@ -45,6 +45,8 @@ public:
 
     ~gaussianesque();
 
+    void print();
+
     void push_term(double coefficient, double exponent);
 
     double operator()(double);

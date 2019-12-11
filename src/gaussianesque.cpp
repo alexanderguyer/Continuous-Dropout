@@ -1,5 +1,8 @@
 #include <stdexcept>
+#include <iostream>
 #include "gaussianesque.h"
+
+using std::cout;
 
 gaussianesque::parameter_set::parameter_set(double alpha, double beta) {
    this->alpha = alpha;
@@ -66,14 +69,14 @@ gaussianesque *gaussianesque::differentiate() {
 
         // Each term differentiates into two more terms via the product rule
         for (int i = 0; i < this->num_terms; i++) {
-            // Skip terms which are just constants, since otherwise they'll differentiate
-            // into terms with -1 exponents and cause errors
-            if (terms[i]->get_exponent() == 0) {
-                continue;
+            // Some terms don't have an "x" / the exponent is zero in cx^k*E(x). In this case,
+            // the first term of the derivative won't exist (no longer a product rule, since
+            // the derivative of the first part of the product is the derivative of a constant = 0).
+            // As such, only derive the first term if the exponent is not zero.
+            if (terms[i]->get_exponent() != 0) {
+                res->push_term(this->terms[i]->get_coefficient() * this->terms[i]->get_exponent(),
+                               this->terms[i]->get_exponent() - 1);
             }
-
-            res->push_term(this->terms[i]->get_coefficient() * this->terms[i]->get_exponent(),
-                           this->terms[i]->get_exponent() - 1);
 
             res->push_term(parameters->get_neg_recip_beta_to_alpha() * parameters->get_alpha() * terms[i]->get_coefficient(),
                            parameters->get_alpha() - 1 + this->terms[i]->get_exponent());
@@ -116,4 +119,11 @@ double gaussianesque::operator()(double x) {
         sum += terms[i]->get_coefficient() * pow(x, terms[i]->get_exponent()) * exp(parameters->get_neg_recip_beta_to_alpha()*pow(x, parameters->get_alpha()));
     }
     return sum;
+}
+
+void gaussianesque::print() {
+    cout << "Alpha / Beta / Neg Recip Beta to Alpha: " << parameters->get_alpha() << " / " << parameters->get_beta() << " / " << parameters->get_neg_recip_beta_to_alpha() << "\n";
+    for (int i = 0; i < num_terms; i++) {
+        cout << "Coefficient / Exponent: " << terms[i]->get_coefficient() << " / " << terms[i]->get_exponent() << "\n";
+    }
 }
