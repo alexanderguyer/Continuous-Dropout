@@ -4,12 +4,7 @@
 
 using std::cout;
 
-//TODO: Add learning rate decay with backprop.
-//TODO: Modify softmax finalizer so that it makes sure all values are non-negative by subtracting the smallest value from all activations.
-//TODO: Optimize code, add more constructors / options, make dropout something that can be enabled / disabled, make functions to modify the structure of the neural network, such as add_layer, add node, etc.
-
-matrix_nn::matrix_nn(int num_layers, int *num_nodes, activation_function **activation_functions, loss_function *m_loss_function, double training_rate, double *p_keep){
-	this->p_keep = NULL;
+matrix_nn::matrix_nn(int num_layers, int *num_nodes, activation_function **activation_functions, loss_function *m_loss_function, double training_rate){
 	rprop_updates = NULL;
 	rprop_signs = NULL;
 	first_rprop = true;
@@ -35,7 +30,7 @@ matrix_nn::matrix_nn(int num_layers, int *num_nodes, activation_function **activ
 			}
 		}
 	}
-	
+
 	node_inputs = new double**[num_layers - 1];
 	node_activations = new double**[num_layers - 1];
 	for(int i = 0; i < num_layers - 1; i++){
@@ -61,9 +56,8 @@ matrix_nn::matrix_nn(int num_layers, int *num_nodes, activation_function **activ
 	}
 	input_gradients[num_layers - 2] = NULL;
 
-	update_p_keep(p_keep);
-	keep_mask = new bool**[num_layers - 2];
-	keep_mask[0] = NULL;
+	dropout_coefficients = new double**[num_layers - 2];
+	dropout_coefficients[0] = NULL;
 }
 
 
@@ -78,7 +72,7 @@ matrix_nn::~matrix_nn(){
 		delete activation_functions[i];
 	}
 	delete [] activation_functions;
-	
+
 	delete_inputs();
 	delete [] this->inputs;
 	delete_desired_activations();
@@ -96,9 +90,8 @@ matrix_nn::~matrix_nn(){
 	}
 	delete [] weights;
 	delete [] num_nodes;
-	delete [] p_keep;
-	delete_keep_mask();
-	delete [] keep_mask;
+	delete_dropout_coefficients();
+	delete [] dropout_coefficients;
 }
 
 void matrix_nn::update_inputs(double **inputs){
@@ -148,7 +141,7 @@ void matrix_nn::delete_desired_activations(){
 void matrix_nn::update_num_sets(int num_sets){
 	delete_inputs();
 	delete_desired_activations();
-	delete_keep_mask();
+	delete_dropout_coefficients();
 	delete_forward_products();
 	delete_backward_products();
 	this->num_sets = num_sets;
@@ -158,7 +151,7 @@ void matrix_nn::update_sets(double **inputs, double **desired_activations, int n
 	update_num_sets(num_sets);
 	update_inputs(inputs);
 	update_desired_activations(desired_activations);
-	gen_keep_mask();
+	gen_dropout_coefficients();
 }
 
 void matrix_nn::delete_rprop_updates(){
@@ -194,42 +187,32 @@ void matrix_nn::update_rprop_updates(double ***rprop_updates){
 	first_rprop = true;
 }
 
-void matrix_nn::update_p_keep(double *p_keep){
-	if(this->p_keep != NULL){
-		delete [] this->p_keep;
-	}
-	this->p_keep = new double[num_layers - 2];
-	for(int i = 0; i < num_layers - 2; i++){
-		this->p_keep[i] = p_keep[i];
-	}
-}
-
-void matrix_nn::delete_keep_mask(){
-	if(keep_mask[0] != NULL){
+void matrix_nn::delete_dropout_coefficients(){
+	if(dropout_coefficients[0] != NULL){
 		for(int i = 0; i < num_layers - 2; i++){
 			for(int j = 0; j < num_sets; j++){
-				delete [] keep_mask[i][j];
+				delete [] dropout_coefficients[i][j];
 			}
-			delete [] keep_mask[i];
+			delete [] dropout_coefficients[i];
 		}
-		keep_mask[0] = NULL;
+		dropout_coefficients[0] = NULL;
 	}
 }
 
-void matrix_nn::gen_keep_mask(){
+void matrix_nn::gen_dropout_coefficients(){
 	for(int i = 0; i < num_layers - 2; i++){
-		keep_mask[i] = new bool*[num_sets];
+		dropout_coefficients[i] = new double*[num_sets];
 		for(int j = 0; j < num_sets; j++){
-			keep_mask[i][j] = new bool[num_nodes[i + 1]];
+			dropout_coefficients[i][j] = new double[num_nodes[i + 1]];
 			for(int k = 0; k < num_nodes[i + 1]; k++){
-				double p = (rand() % 100) / 100.0;
-				keep_mask[i][j][k] = p < p_keep[i];
+				// TODO Use distribution to generate dropout coefficients
+				//dropout_coefficients[i][j][k] =
 			}
 		}
 	}
 }
 
-void matrix_nn::delete_forward_products(){	
+void matrix_nn::delete_forward_products(){
 	if(node_inputs[0] != NULL){
 		for(int i = 0; i < num_layers - 1; i++){
 			for(int j = 0; j < this->num_sets; j++){
@@ -251,22 +234,7 @@ void matrix_nn::feed_forward(){
 		if(i < num_layers - 2){
 			for(int j = 0; j < num_sets; j++){
 				for(int k = 0; k < num_nodes[i + 1]; k++){
-					node_activations[i][j][k] = keep_mask[i][j][k] ? node_activations[i][j][k] : 0;
-				}
-			}
-		}
-	}
-}
-
-void matrix_nn::feed_forward_no_dropout(){
-	delete_forward_products();
-	for(int i = 0; i < num_layers - 1; i++){
-		node_inputs[i] = dot(i == 0 ? inputs : node_activations[i - 1], num_sets, num_nodes[i], weights[i], num_nodes[i], num_nodes[i + 1]);
-		node_activations[i] = element_wise_activation_function(node_inputs[i], num_sets, num_nodes[i + 1], activation_functions[i]);
-		if(i < num_layers - 2){
-			for(int j = 0; j < num_sets; j++){
-				for(int k = 0; k < num_nodes[i + 1]; k++){
-					node_activations[i][j][k] *= p_keep[i];
+					node_activations[i][j][k] = dropout_coefficients[i][j][k] * node_activations[i][j][k];
 				}
 			}
 		}
@@ -326,7 +294,7 @@ void matrix_nn::feed_backward(){
 	}
 }
 
-void matrix_nn::train_rprop(){	
+void matrix_nn::train_rprop(){
 	double ***weight_gradients = new double**[num_layers - 1];
 	feed_forward();
 	feed_backward();
@@ -483,7 +451,7 @@ double matrix_nn::get_output(int set_index, int node_index){
 void matrix_nn::calc_outputs(double **inputs, int num_sets){
 	update_num_sets(num_sets);
 	update_inputs(inputs);
-	feed_forward_no_dropout();
+	feed_forward();
 	if(activation_functions[num_layers - 2]->get_finalizer() != NULL){
 		for(int i = 0; i < num_sets; i++){
 			(*(activation_functions[num_layers - 2]->get_finalizer()))(node_activations[num_layers - 2][i], num_nodes[num_layers - 1]);

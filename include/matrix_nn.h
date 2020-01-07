@@ -23,8 +23,7 @@ class matrix_nn{
 		int num_sets;
 		loss_function *m_loss_function;
 		double training_rate;
-		double *p_keep;
-		bool ***keep_mask;
+		double ***dropout_coefficients;
 
 		double **dot(double **, int, int, double **, int, int);
 		double **first_inverse_dot(double **, int, int, double **, int, int);
@@ -34,7 +33,6 @@ class matrix_nn{
 		double **calc_loss_matrix(double **);
 		void delete_forward_products();
 		void feed_forward();
-		void feed_forward_no_dropout();
 		void delete_backward_products();
 		void update_inputs(double **);
 		void delete_inputs();
@@ -44,13 +42,12 @@ class matrix_nn{
 		void train();
 		void train_rprop();
 		void delete_rprop_updates();
-		void update_p_keep(double *p_keep);
-		void gen_keep_mask();
-		void delete_keep_mask();
+		void gen_dropout_coefficients();
+		void delete_dropout_coefficients();
 		void update_num_sets(int);
 		void update_sets(double **inputs, double **desired_activations, int num_sets);
 	public:
-		matrix_nn(int num_layers, int *num_nodes, activation_function **activation_functions, loss_function *m_loss_function, double training_rate, double *p_keep);
+		matrix_nn(int num_layers, int *num_nodes, activation_function **activation_functions, loss_function *m_loss_function, double training_rate);
 		~matrix_nn();
 		void feed_backward();
 		void calc_outputs(double **, int);
