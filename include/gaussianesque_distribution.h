@@ -2,6 +2,8 @@
 #define GAUSSIANESQUE_DISTRIBUTION_H
 
 #include "continuous_distribution.h"
+#include "polynomial.h"
+#include "gaussianesque.h"
 
 // This class represents a continuous probability distribution
 // whose PDF is a gaussianesque function (see gaussianesque.(h|cpp)).
@@ -42,12 +44,14 @@
 
 class gaussianesque_distribution : public continuous_distribution {
 private:
-	polynomial *approximated_gaussianesque; // Used to approximate the probability
+	polynomial *approximated_integral; // Used to approximate the probability
 	// integral transform, since a gaussianesque is not integrable by elementary
 	// means
+	int upper_bound;
+	double window_integral;
 public:
-	gaussianesque_distribution(gaussianesque *g); // Accepts a gaussianesque, approximates
-	// it to a polynomial with a taylor series, and dose probability integral transformations
+	gaussianesque_distribution(gaussianesque *g, int upper_bound); // Accepts a gaussianesque, approximates
+	// it to a polynomial with a taylor series, and does probability integral transformations
 	// on it to generate values following the normalized gaussianesque as the PDF.
 
 	virtual double operator()(); // To be defined

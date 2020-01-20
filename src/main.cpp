@@ -6,6 +6,7 @@
 #include "softmax.h"
 #include "relu.h"
 #include "mse.h"
+#include "gaussianesque_distribution.h"
 
 using std::cout;
 
@@ -158,16 +159,18 @@ int main(){
 	softmax s;
 	activation_function *functions[] = {&r, &s};
 	mse m;
-	double p_keep[] = {1.0};
 	double backprop_training_rate = 0.01;
-	matrix_nn nn(num_layers, num_nodes, functions, &m, backprop_training_rate, p_keep);
+	// Create probability distribution and pass it into the matrix constructor
+	gaussianesque g(2, 1);
+	gaussianesque_distribution dropout_dist(&g, 2);
+	matrix_nn nn(num_layers, num_nodes, functions, &m, backprop_training_rate, &dropout_dist);
 	mnist_iterator itr;
 
 	int num_sets = 60000;
 	int read_size = 1000;
 	int batch_size = 50;
 	int num_reads = (num_sets / read_size) * read_size < num_sets ? (num_sets / read_size) + 1 : (num_sets / read_size);
-	int epochs = 100;
+	int epochs = 1;
 
 	for (int epoch = 0; epoch < epochs; epoch++) {
 		for(int i = 0; i < num_reads; i++){

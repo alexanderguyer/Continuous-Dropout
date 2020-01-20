@@ -4,7 +4,7 @@
 
 using std::cout;
 
-matrix_nn::matrix_nn(int num_layers, int *num_nodes, activation_function **activation_functions, loss_function *m_loss_function, double training_rate){
+matrix_nn::matrix_nn(int num_layers, int *num_nodes, activation_function **activation_functions, loss_function *m_loss_function, double training_rate, probability_distribution *dropout_dist){
 	rprop_updates = NULL;
 	rprop_signs = NULL;
 	first_rprop = true;
@@ -58,6 +58,7 @@ matrix_nn::matrix_nn(int num_layers, int *num_nodes, activation_function **activ
 
 	dropout_coefficients = new double**[num_layers - 2];
 	dropout_coefficients[0] = NULL;
+	this->dropout_dist = dropout_dist;
 }
 
 
@@ -205,8 +206,8 @@ void matrix_nn::gen_dropout_coefficients(){
 		for(int j = 0; j < num_sets; j++){
 			dropout_coefficients[i][j] = new double[num_nodes[i + 1]];
 			for(int k = 0; k < num_nodes[i + 1]; k++){
-				// TODO Use distribution to generate dropout coefficients
-				//dropout_coefficients[i][j][k] =
+				// Use distribution to generate dropout coefficients
+				dropout_coefficients[i][j][k] = (*dropout_dist)();
 			}
 		}
 	}
@@ -234,7 +235,22 @@ void matrix_nn::feed_forward(){
 		if(i < num_layers - 2){
 			for(int j = 0; j < num_sets; j++){
 				for(int k = 0; k < num_nodes[i + 1]; k++){
-					node_activations[i][j][k] = dropout_coefficients[i][j][k] * node_activations[i][j][k];
+					node_activations[i][j][k] = dropout_coefficients[i][j][k] + node_activations[i][j][k];
+				}
+			}
+		}
+	}
+}
+
+void matrix_nn::feed_forward_without_dropout(){
+	delete_forward_products();
+	for(int i = 0; i < num_layers - 1; i++){
+		node_inputs[i] = dot(i == 0 ? inputs : node_activations[i - 1], num_sets, num_nodes[i], weights[i], num_nodes[i], num_nodes[i + 1]);
+		node_activations[i] = element_wise_activation_function(node_inputs[i], num_sets, num_nodes[i + 1], activation_functions[i]);
+		if(i < num_layers - 2){
+			for(int j = 0; j < num_sets; j++){
+				for(int k = 0; k < num_nodes[i + 1]; k++){
+					node_activations[i][j][k] = node_activations[i][j][k];
 				}
 			}
 		}
@@ -451,7 +467,7 @@ double matrix_nn::get_output(int set_index, int node_index){
 void matrix_nn::calc_outputs(double **inputs, int num_sets){
 	update_num_sets(num_sets);
 	update_inputs(inputs);
-	feed_forward();
+	feed_forward_without_dropout();
 	if(activation_functions[num_layers - 2]->get_finalizer() != NULL){
 		for(int i = 0; i < num_sets; i++){
 			(*(activation_functions[num_layers - 2]->get_finalizer()))(node_activations[num_layers - 2][i], num_nodes[num_layers - 1]);

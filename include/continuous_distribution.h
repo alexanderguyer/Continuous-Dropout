@@ -3,6 +3,6 @@
 
 #include "probability_distribution.h"
 
-class continuous_distribution : public probability_distribution {}
+class continuous_distribution : public probability_distribution {};
 
 #endif

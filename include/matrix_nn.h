@@ -4,6 +4,7 @@
 #include <cstddef>
 #include "activation_function.h"
 #include "loss_function.h"
+#include "probability_distribution.h"
 
 class matrix_nn{
 	private:
@@ -24,6 +25,7 @@ class matrix_nn{
 		loss_function *m_loss_function;
 		double training_rate;
 		double ***dropout_coefficients;
+		probability_distribution *dropout_dist;
 
 		double **dot(double **, int, int, double **, int, int);
 		double **first_inverse_dot(double **, int, int, double **, int, int);
@@ -33,6 +35,7 @@ class matrix_nn{
 		double **calc_loss_matrix(double **);
 		void delete_forward_products();
 		void feed_forward();
+		void feed_forward_without_dropout();
 		void delete_backward_products();
 		void update_inputs(double **);
 		void delete_inputs();
@@ -47,7 +50,7 @@ class matrix_nn{
 		void update_num_sets(int);
 		void update_sets(double **inputs, double **desired_activations, int num_sets);
 	public:
-		matrix_nn(int num_layers, int *num_nodes, activation_function **activation_functions, loss_function *m_loss_function, double training_rate);
+		matrix_nn(int num_layers, int *num_nodes, activation_function **activation_functions, loss_function *m_loss_function, double training_rate, probability_distribution *p);
 		~matrix_nn();
 		void feed_backward();
 		void calc_outputs(double **, int);
