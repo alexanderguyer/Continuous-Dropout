@@ -1,184 +1,53 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <sstream>
+#include <iomanip>
+#include <fstream>
 #include "mnist_iterator.h"
 #include "matrix_nn.h"
 #include "softmax.h"
 #include "relu.h"
+#include "cross_entropy.h"
 #include "mse.h"
 #include "gaussianesque_distribution.h"
 
+using std::ostringstream;
 using std::cout;
+using std::ofstream;
+using std::setprecision;
+using std::fixed;
+using std::flush;
 
-/**
-
-	TESTS:
-	Relu with 100,000 epochs: 99.98% accurate
-	Sigmoid with 1,000,000 epochs: 99.97% accurate
-
-	So relu became more accurate with a tenth the epochs...
-
-	Then, tested relu with RProp. In 10,000 epochs, it was 99.94% accurate with backprop,
-	and with RProp, error is essentially zero. We're talking 10^-9 and 10^-155 errors here.
-	And that's with just 10,000 epochs. That's more accurate than backprop @ 100,000 epochs,
-	as well as backprop w/ sigmoid @ 1,000,000 epochs. Speed has been increased by over 10,000%
-
-	Keep in mind that rprop may require very specific initial update values and weight
-	configurations. I had to mutiply by the layer plus one, squared, with a coefficient of 0.01.
-	Any lower, it won't be accurate. Any higher, it will get stuck at a local minimum. Higher power,
-	it will also get stuck.
-
-*/
-/*
-int main(){
-	srand(time(NULL));
-	int num_layers = 3;
-	int num_nodes[] = {2, 4, 2};
-	softmax s;
-	relu r;
-	activation_function *functions[] = {&r, &s};
-	mse m_mse;
-	double *p_keep = new double[num_layers - 2];
-	for(int i = 0; i < num_layers - 2; i++){
-		p_keep[i] = 1;
-	}
-	matrix_nn m(num_layers, num_nodes, functions, &m_mse, .01, p_keep);
-	double **inputs = new double*[2];
-	inputs[0] = new double[2];
-	inputs[0][0] = 1;
-	inputs[0][1] = 1;
-	inputs[1] = new double[2];
-	inputs[1][0] = 1;
-	inputs[1][1] = 0;
-	double **desired_activations = new double*[2];
-	desired_activations[0] = new double[2];
-	desired_activations[0][0] = 1;
-	desired_activations[0][1] = 0;
-	desired_activations[1] = new double[2];
-	desired_activations[1][0] = 0;
-	desired_activations[1][1] = 1;
-	m.calc_outputs(inputs, 2);
-	cout << "1 XOR 1: " << (m.get_output(0, 0) * 100) << "% vs " << (m.get_output(0, 1) * 100) << "%\n";
-	cout << "1 XOR 0: " << (m.get_output(1, 0) * 100) << "% vs " << (m.get_output(1, 1) * 100) << "%\n";
-	double ***rprop_updates = new double**[num_layers - 1];
-	for(int i = 0; i < num_layers - 1; i++){
-		rprop_updates[i] = new double*[num_nodes[i]];
-		for(int j = 0; j < num_nodes[i]; j++){
-			rprop_updates[i][j] = new double[num_nodes[i + 1]];
-			for(int k = 0; k < num_nodes[i + 1]; k++){
-				rprop_updates[i][j][k] = 0.005 * (i + 1);
-			}
-		}
-	}
-	//m.train_rprop(inputs, desired_activations, 2, rprop_updates, 10000);
-	m.train(inputs, desired_activations, 2, 100000);
-	m.calc_outputs(inputs, 2);
-	cout << "1 XOR 1: " << (m.get_output(0, 0) * 100) << "% vs " << (m.get_output(0, 1) * 100) << "%\n";
-	cout << "1 XOR 0: " << (m.get_output(1, 0) * 100) << "% vs " << (m.get_output(1, 1) * 100) << "%\n";
-
-	for(int i = 0; i < num_layers - 1; i++){
-		for(int j = 0; j < num_nodes[i]; j++){
-			delete [] rprop_updates[i][j];
-		}
-		delete [] rprop_updates[i];
-	}
-	delete [] p_keep;
-	delete [] rprop_updates;
-	delete [] desired_activations[0];
-	delete [] desired_activations[1];
-	delete [] desired_activations;
-	delete [] inputs[0];
-	delete [] inputs[1];
-	delete [] inputs;
-	return 0;
-}*/
-
-/*
-int main(){
-	srand(time(NULL));
-	int num_layers = 3;
-	int num_nodes[] = {784, 100, 10};
-	int num_sets = 100;
-	softmax s;
-	relu r;
-	activation_function *functions[] = {&r, &s};
-	mse m_mse;
-	double *p_keep = new double[num_layers - 2];
-	for(int i = 0; i < num_layers - 2; i++){
-		p_keep[i] = 1;
-	}
-	matrix_nn m(num_layers, num_nodes, functions, &m_mse, 5, p_keep);
-	double **inputs = new double*[num_sets];
-	double **desired_activations = new double*[num_sets];
-	for(int i = 0; i < num_sets; i++){
-		inputs[i] = new double[num_nodes[0]];
-		desired_activations[i] = new double[num_nodes[num_layers - 1]];
-	}
-	m.calc_outputs(inputs, num_sets);
-	cout << "1 XOR 1: " << (m.get_output(0, 0) * 100) << "% vs " << (m.get_output(0, 1) * 100) << "%\n";
-	cout << "1 XOR 0: " << (m.get_output(1, 0) * 100) << "% vs " << (m.get_output(1, 1) * 100) << "%\n";
-	double ***rprop_updates = new double**[num_layers - 1];
-	for(int i = 0; i < num_layers - 1; i++){
-		rprop_updates[i] = new double*[num_nodes[i]];
-		for(int j = 0; j < num_nodes[i]; j++){
-			rprop_updates[i][j] = new double[num_nodes[i + 1]];
-			for(int k = 0; k < num_nodes[i + 1]; k++){
-				rprop_updates[i][j][k] = 0.01 * (i + 1) * (i + 1);
-			}
-		}
-	}
-	//m.train_rprop(inputs, desired_activations, 2, rprop_updates, 10000);
-	m.train(inputs, desired_activations, num_sets, 5);
-	m.calc_outputs(inputs, num_sets);
-	cout << "1 XOR 1: " << (m.get_output(0, 0) * 100) << "% vs " << (m.get_output(0, 1) * 100) << "%\n";
-	cout << "1 XOR 0: " << (m.get_output(1, 0) * 100) << "% vs " << (m.get_output(1, 1) * 100) << "%\n";
-
-	for(int i = 0; i < num_layers - 1; i++){
-		for(int j = 0; j < num_nodes[i]; j++){
-			delete [] rprop_updates[i][j];
-		}
-		delete [] rprop_updates[i];
-	}
-
-	delete [] p_keep;
-	delete [] rprop_updates;
-
-	for(int i = 0; i < num_sets; i++){
-		delete [] inputs[i];
-		delete [] desired_activations[i];
-	}
-	delete [] inputs;
-	delete [] desired_activations;
-	return 0;
-}*/
-
-int main(){
+void iterate(double alpha, double beta, int upper_bound, double training_rate, int epochs = 10) {
 	int num_layers = 3;
 	int num_nodes[] = {28*28, 150, 10};
 	relu r;
 	softmax s;
 	activation_function *functions[] = {&r, &s};
-	mse m;
-	double backprop_training_rate = 0.01;
+	cross_entropy m;
 	// Create probability distribution and pass it into the matrix constructor
-	gaussianesque g(2, 1);
-	gaussianesque_distribution dropout_dist(&g, 2);
-	matrix_nn nn(num_layers, num_nodes, functions, &m, backprop_training_rate, &dropout_dist);
+	gaussianesque g(alpha, beta);
+	gaussianesque_distribution dropout_dist(&g, upper_bound);
+	matrix_nn nn(num_layers, num_nodes, functions, &m, training_rate, &dropout_dist);
 	mnist_iterator itr;
 
 	int num_sets = 60000;
 	int read_size = 1000;
 	int batch_size = 50;
 	int num_reads = (num_sets / read_size) * read_size < num_sets ? (num_sets / read_size) + 1 : (num_sets / read_size);
-	int epochs = 1;
 
 	for (int epoch = 0; epoch < epochs; epoch++) {
+		if (epoch > 0) {
+			cout << ", " << flush;
+		}
+		cout << epoch << ": " << flush;
 		for(int i = 0; i < num_reads; i++){
 			int remaining = num_sets - i * read_size;
 			int specific_read_size = read_size < remaining ? read_size : remaining;
+
 			double **batch = itr.get_inputs(i * read_size, specific_read_size, mnist_iterator::TYPE_TRAIN);
 			double **desired_outputs = itr.get_desired_outputs(i * read_size, specific_read_size, mnist_iterator::TYPE_TRAIN);
-			cout << i << "\n";
 
 			int num_batches = (specific_read_size / batch_size) * batch_size < specific_read_size ? (specific_read_size / batch_size) + 1 : (specific_read_size / batch_size);
 			for(int j = 0; j < num_batches; j++){
@@ -193,6 +62,8 @@ int main(){
 			delete [] batch;
 			delete [] desired_outputs;
 		}
+
+		
 	}
 
 	num_sets = 10000;
@@ -229,8 +100,9 @@ int main(){
 					}
 				}
 
-				if(highest_predicted_index == highest_actual_index)
+				if(highest_predicted_index == highest_actual_index) {
 					num_correct++;
+				}
 			}
 		}
 
@@ -242,7 +114,35 @@ int main(){
 		delete [] desired_outputs;
 	}
 
-	cout << "Percent correct: " << (double) num_correct / 10000.0 * 100.0 << "\n";
+	ostringstream out_file_name;
+	out_file_name << fixed;
+	out_file_name << setprecision(1);
+	out_file_name << "data/result-a" << alpha << "-b" << beta << "-ub" << upper_bound << "-tr";
+	out_file_name << setprecision(5);
+	out_file_name << training_rate << ".txt";
+
+	ofstream out_file(out_file_name.str());
+	double percent_correct = (double) num_correct / 10000.0;
+	out_file << std::setprecision(5);
+	out_file << percent_correct << "\n";
+
+	cout << setprecision(5) << percent_correct << " => " << out_file_name.str() << "\n";
+}
+
+int main(){
+	for (int alpha_itr = 0; alpha_itr < 6; alpha_itr++) {
+		for (int beta_itr = 0; beta_itr < 6; beta_itr++) {
+			for (int upper_bound_itr = 0; upper_bound_itr < 3; upper_bound_itr++) {
+				for (int training_rate_itr = 0; training_rate_itr < 3; training_rate_itr++) {
+					double alpha = alpha_itr + 2;
+					double beta = beta_itr + 1;
+					int upper_bound = ceil((upper_bound_itr + 1) * beta);
+					double training_rate = 0.00025 * pow(10, training_rate_itr);
+					iterate(alpha, beta, upper_bound, training_rate);
+				}
+			}
+		}
+	}
 
 	return 0;
 }
