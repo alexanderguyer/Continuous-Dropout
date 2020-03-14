@@ -19,12 +19,12 @@ using std::setprecision;
 using std::fixed;
 using std::flush;
 
-void iterate(double alpha, double beta, int upper_bound, double training_rate, int epochs = 10) {
-	int num_layers = 3;
-	int num_nodes[] = {28*28, 150, 10};
+void iterate(double alpha, double beta, double upper_bound, double training_rate, int epochs = 20) {
+	int num_layers = 4;
+	int num_nodes[] = {28*28, 512, 512, 10};
 	relu r;
 	softmax s;
-	activation_function *functions[] = {&r, &s};
+	activation_function *functions[] = {&r, &r, &s};
 	cross_entropy m;
 	// Create probability distribution and pass it into the matrix constructor
 	gaussianesque g(alpha, beta);
@@ -40,7 +40,7 @@ void iterate(double alpha, double beta, int upper_bound, double training_rate, i
 	// Open output file
 	ostringstream out_file_name;
 	out_file_name << fixed;
-	out_file_name << setprecision(1);
+	out_file_name << setprecision(2);
 	out_file_name << "data/result-a" << alpha << "-b" << beta << "-ub" << upper_bound << "-tr";
 	out_file_name << setprecision(5);
 	out_file_name << training_rate << ".txt";
@@ -191,16 +191,23 @@ void iterate(double alpha, double beta, int upper_bound, double training_rate, i
 }
 
 int main(){
-	for (int alpha_itr = 0; alpha_itr < 6; alpha_itr++) {
-		for (int beta_itr = 0; beta_itr < 6; beta_itr++) {
+
+	for (int alpha_itr = 0; alpha_itr < 5; alpha_itr++) {
+		for (int beta_itr = 0; beta_itr < 3; beta_itr++) {
 			for (int upper_bound_itr = 0; upper_bound_itr < 3; upper_bound_itr++) {
-				for (int training_rate_itr = 0; training_rate_itr < 3; training_rate_itr++) {
-					double alpha = alpha_itr + 2;
-					double beta = beta_itr + 1;
-					int upper_bound = ceil((upper_bound_itr + 1) * beta);
-					double training_rate = 0.00025 * pow(10, training_rate_itr);
-					iterate(alpha, beta, upper_bound, training_rate);
+				//for (int training_rate_itr = 0; training_rate_itr < 3; training_rate_itr++) {
+				double alpha = alpha_itr + 2;
+				double beta;
+				if (beta_itr < 3) {
+					beta = pow(10, beta_itr) * 0.01;
+				} else {
+					beta = 5;
 				}
+
+				double upper_bound = (upper_bound_itr + 1) * 0.6666667 * beta;
+				//double training_rate = 0.00025 * pow(10, training_rate_itr);
+				iterate(alpha, beta, upper_bound, 0.00025);
+				//}
 			}
 		}
 	}
