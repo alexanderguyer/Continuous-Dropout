@@ -21,10 +21,13 @@ using std::flush;
 
 void iterate(double alpha, double beta, double upper_bound, double training_rate, int epochs = 20) {
 	int num_layers = 4;
+	//int num_layers = 3;
 	int num_nodes[] = {28*28, 512, 512, 10};
+	//int num_nodes[] = {28*28, 128, 10};
 	relu r;
 	softmax s;
 	activation_function *functions[] = {&r, &r, &s};
+	//activation_function *functions[] = {&r, &s};
 	cross_entropy m;
 	// Create probability distribution and pass it into the matrix constructor
 	gaussianesque g(alpha, beta);
@@ -193,8 +196,10 @@ void iterate(double alpha, double beta, double upper_bound, double training_rate
 int main(){
 
 	for (int alpha_itr = 0; alpha_itr < 5; alpha_itr++) {
-		for (int beta_itr = 0; beta_itr < 3; beta_itr++) {
-			for (int upper_bound_itr = 0; upper_bound_itr < 3; upper_bound_itr++) {
+		//for (int beta_itr = 0; beta_itr < 3; beta_itr++) {
+		//	for (int upper_bound_itr = 0; upper_bound_itr < 3; upper_bound_itr++) {
+				int beta_itr = 0;
+				int upper_bound_itr = 0;
 				//for (int training_rate_itr = 0; training_rate_itr < 3; training_rate_itr++) {
 				double alpha = alpha_itr + 2;
 				double beta;
@@ -206,10 +211,10 @@ int main(){
 
 				double upper_bound = (upper_bound_itr + 1) * 0.6666667 * beta;
 				//double training_rate = 0.00025 * pow(10, training_rate_itr);
-				iterate(alpha, beta, upper_bound, 0.00025);
+				iterate(alpha, beta, upper_bound, 0.0005);
 				//}
-			}
-		}
+		//	}
+		//}
 	}
 
 	return 0;

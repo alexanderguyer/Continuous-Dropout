@@ -235,7 +235,7 @@ void matrix_nn::feed_forward(){
 		if(i < num_layers - 2){
 			for(int j = 0; j < num_sets; j++){
 				for(int k = 0; k < num_nodes[i + 1]; k++){
-					node_activations[i][j][k] = dropout_coefficients[i][j][k] + node_activations[i][j][k];
+					node_activations[i][j][k] = (dropout_coefficients[i][j][k] + 1) * node_activations[i][j][k];
 				}
 			}
 		}
